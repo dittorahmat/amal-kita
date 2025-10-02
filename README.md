@@ -2,7 +2,7 @@
 
 AmalKita adalah sebuah platform crowdfunding syariah modern yang dirancang untuk memfasilitasi dan menyalurkan donasi, zakat, infak, dan sedekah bagi komunitas Muslim di Indonesia. Aplikasi ini bertujuan untuk menghubungkan para donatur dengan berbagai kampanye sosial, kemanusiaan, dan keagamaan yang terverifikasi, dengan mengedepankan prinsip transparansi, kemudahan, dan kepercayaan.
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/dittorahmat/amal-kita)
 
 ## ✨ Fitur Utama
 
@@ -79,4 +79,4 @@ Proyek ini dirancang untuk di-deploy dengan mudah ke platform Cloudflare.
 
 Atau, deploy langsung dari repositori GitHub Anda dengan satu klik.
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/dittorahmat/amal-kita)
