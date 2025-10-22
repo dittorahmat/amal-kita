@@ -7,6 +7,10 @@ import { DurableObject } from "cloudflare:workers";
 import type { Context } from "hono";
 export interface Env {
   GlobalDurableObject: DurableObjectNamespace<GlobalDurableObject>;
+  ODOO_BASE_URL?: string;
+  ODOO_USERNAME?: string;
+  ODOO_PASSWORD?: string;
+  ODOO_DATABASE?: string;
 }
 type Doc<T> = { v: number; data: T };
 /**
