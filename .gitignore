@@ -27,5 +27,24 @@ dist-ssr
 .wrangler
 .dev.vars*
 .env.*
+.env
+
+# Environment and configuration files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging.local
+
+# Sensitive files
+.secret*
+.config*
+*.key
+*.pem
+*.crt
+*.cert
+*.db
+*.db-shm
+*.db-wal
 
 data/

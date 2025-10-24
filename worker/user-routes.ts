@@ -29,28 +29,40 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // DONATIONS
   app.post('/api/campaigns/:id/donations', async (c) => {
+    console.log('=== Donation endpoint hit ===');
     const { id } = c.req.param();
+    console.log('Campaign ID:', id);
     const campaign = new CampaignEntity(c.env, id);
+    console.log('Campaign object created');
     if (!await campaign.exists()) {
+      console.log('Campaign not found');
       return notFound(c, 'Campaign not found');
     }
+    console.log('Campaign exists, reading body');
     const body = await c.req.json();
+    console.log('Body received:', body);
     const validation = donationSchema.safeParse(body);
+    console.log('Validation result:', validation.success);
     if (!validation.success) {
+      console.log('Validation errors:', validation.error.toString());
       return bad(c, validation.error.toString());
     }
     
     // Process the donation first
+    console.log('About to add donation to campaign');
     const updatedCampaign = await campaign.addDonation(validation.data);
+    console.log('Donation added to campaign, creating donor object');
     
     // Create a donor object from the validation data
+    // Using a simple timestamp-based ID instead of crypto.randomUUID() to avoid potential issues in Workers environment
     const donor = {
-      id: crypto.randomUUID(), // This will be different from the one created in addDonation, but that's OK for this use case
+      id: `donor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Using timestamp + random string as fallback
       name: validation.data.name,
       amount: validation.data.amount,
       message: validation.data.message,
       timestamp: Date.now()
     };
+    console.log('Donor object created:', donor.name, donor.amount);
     
     // Attempt to create an invoice in Odoo (this is non-blocking to the donation process)
     try {
