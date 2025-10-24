@@ -66,7 +66,7 @@ export function DonationModal({ campaignId, campaignTitle, open, onOpenChange, o
       toast.success('Donasi berhasil! Terima kasih atas kebaikan Anda.');
       reset();
       onSuccess();
-      const url = `/donasi-berhasil/${campaignId}?amount=${data.amount}&name=${encodeURIComponent(donorName)}`;
+      const url = `/konfirmasi-donasi/${campaignId}?amount=${data.amount}&name=${encodeURIComponent(donorName)}`;
       navigate(url);
     } catch (error) {
       console.error('Donation failed:', error);

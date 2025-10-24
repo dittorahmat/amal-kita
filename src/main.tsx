@@ -19,6 +19,7 @@ import { TeamPage } from './pages/TeamPage';
 import { ContactPage } from './pages/ContactPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { DonationConfirmationPage } from './pages/DonationConfirmationPage';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -43,6 +44,11 @@ const router = createBrowserRouter([
   {
     path: "/tentang-kami",
     element: <AboutPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/konfirmasi-donasi/:campaignId",
+    element: <DonationConfirmationPage />,
     errorElement: <RouteErrorBoundary />,
   },
   {
