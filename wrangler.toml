@@ -1,0 +1,54 @@
+name = "amal-kita"
+compatibility_date = "2024-11-07"
+compatibility_flags = ["nodejs_compat"]
+
+# Workers Sites
+[assets]
+binding = "ASSETS"
+
+# R2 Bucket for image storage
+[[r2_buckets]]
+binding = "CAMPAIGN_IMAGES"
+bucket_name = "campaign-images"
+preview_bucket_name = "campaign-images-preview"
+
+# Durable Objects
+[[durable_objects.bindings]]
+name = "GlobalDurableObject"
+class_name = "GlobalDurableObject"
+
+# Migrations
+[[migrations]]
+tag = "v1"
+new_classes = ["GlobalDurableObject"]
+
+[env.development]
+name = "amal-kita-dev"
+
+[env.production]
+name = "amal-kita"
+
+# Define variables for use in dev, preview, and production
+[vars]
+# Odoo Configuration
+ODOO_BASE_URL = "http://localhost:8096"
+ODOO_USERNAME = "admin"
+ODOO_PASSWORD = "admin"
+ODOO_DATABASE = "odoo"
+
+# Define bindings for use in dev, preview, and production
+[[env.development.r2_buckets]]
+binding = "CAMPAIGN_IMAGES"
+bucket_name = "campaign-images-dev"
+
+[[env.production.r2_buckets]]
+binding = "CAMPAIGN_IMAGES"
+bucket_name = "campaign-images"
+
+[[env.development.durable_objects.bindings]]
+name = "GlobalDurableObject"
+class_name = "GlobalDurableObject"
+
+[[env.production.durable_objects.bindings]]
+name = "GlobalDurableObject"
+class_name = "GlobalDurableObject"

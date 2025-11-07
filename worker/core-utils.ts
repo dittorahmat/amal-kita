@@ -7,6 +7,7 @@ import { DurableObject } from "cloudflare:workers";
 import type { Context } from "hono";
 export interface Env {
   GlobalDurableObject: DurableObjectNamespace<GlobalDurableObject>;
+  CAMPAIGN_IMAGES: R2Bucket;
   ODOO_BASE_URL?: string;
   ODOO_USERNAME?: string;
   ODOO_PASSWORD?: string;

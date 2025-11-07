@@ -1,6 +1,6 @@
 import { IndexedEntity } from "./core-utils";
 import type { Campaign, Donor } from "@shared/types";
-import { MOCK_CAMPAIGNS } from "@shared/mock-data";
+
 export class CampaignEntity extends IndexedEntity<Campaign> {
   static readonly entityName = "campaign";
   static readonly indexName = "campaigns";
@@ -21,12 +21,12 @@ export class CampaignEntity extends IndexedEntity<Campaign> {
       createdAt: 0,
     };
   }
-  static seedData = MOCK_CAMPAIGNS;
+  
   async addDonation(donation: Omit<Donor, 'id' | 'timestamp'>): Promise<Campaign> {
     return this.mutate(campaign => {
       const newDonor: Donor = {
         ...donation,
-        id: crypto.randomUUID(),
+        id: `donor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Using timestamp + random string as fallback to crypto.randomUUID()
         timestamp: Date.now(),
       };
       const updatedDonors = [newDonor, ...campaign.donors];
@@ -41,5 +41,25 @@ export class CampaignEntity extends IndexedEntity<Campaign> {
         donors: updatedDonors,
       };
     });
+  }
+  
+  /**
+   * Migrate existing campaign data to the database
+   * @param campaigns - Array of campaigns to migrate
+   */
+  static async migrateCampaigns(env: Env, campaigns: Campaign[]): Promise<void> {
+    for (const campaign of campaigns) {
+      // Check if campaign already exists
+      const entity = new CampaignEntity(env, campaign.id);
+      const exists = await entity.exists();
+      
+      if (!exists) {
+        // Create the campaign if it doesn't exist
+        await CampaignEntity.create(env, campaign);
+        console.log(`Migrated campaign: ${campaign.title} (${campaign.id})`);
+      } else {
+        console.log(`Campaign already exists: ${campaign.title} (${campaign.id})`);
+      }
+    }
   }
 }

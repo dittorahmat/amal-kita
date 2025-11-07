@@ -1,5 +1,12 @@
-import type { Campaign } from './types';
-export const MOCK_CAMPAIGNS: Campaign[] = [
+/**
+ * Migration service to move test data from mock file to database
+ */
+import { CampaignEntity } from '../entities';
+import type { Env } from '../core-utils';
+import type { Campaign } from '@shared/types';
+
+// This is the mock data that we'll migrate
+const MOCK_CAMPAIGNS: Campaign[] = [
   {
     id: 'bantu-sekolah-pedalaman',
     title: 'Bantu Renovasi Sekolah di Pedalaman Papua',
@@ -11,8 +18,8 @@ export const MOCK_CAMPAIGNS: Campaign[] = [
     donorCount: 1234,
     daysRemaining: 25,
     category: 'Pendidikan',
-    story: 'Sekolah Dasar di Desa Ciptagelar, pedalaman Papua, berada dalam kondisi yang sangat memprihatinkan. Atap bocor, dinding rapuh, dan fasilitas yang tidak memadai mengancam keselamatan dan semangat belajar anak-anak. Dana ini akan digunakan untuk merenovasi total gedung sekolah, membeli perabotan baru, dan menyediakan buku-buku layak baca.',
-    createdAt: new Date(Date.now() - 5 * 86400000).getTime(), // 5 days ago
+    story: 'Sekolah Dasar di Desa Ciptagelar, pedalaman Papua, berada dalam kondisi yang sangat memprihatinkan. Atap bocor, dinding rapuh, dan fasilitas yang tidak memadai mengancam keselitan dan semangat belajar anak-anak. Dana ini akan digunakan untuk merenovasi total gedung sekolah, membeli perabotan baru, dan menyediakan buku-buku layak baca.',
+    createdAt: Date.now() - 5 * 86400000, // 5 days ago
     donors: [
       { id: 'd1', name: 'Hamba Allah', amount: 200000, message: 'Semoga berkah.', timestamp: Date.now() - 86400000 },
       { id: 'd2', name: 'Ahmad S.', amount: 150000, timestamp: Date.now() - 172800000 },
@@ -31,7 +38,7 @@ export const MOCK_CAMPAIGNS: Campaign[] = [
     daysRemaining: 10,
     category: 'Kemanusiaan',
     story: 'Kekeringan panjang membuat warga Desa Oebelo di Nusa Tenggara Timur kesulitan mendapatkan air bersih. Mereka harus berjalan berkilo-kilometer setiap hari untuk mendapatkan air. Donasi Anda akan sangat berarti untuk membangun sumur bor yang akan menjadi sumber kehidupan bagi ratusan keluarga di desa ini.',
-    createdAt: new Date(Date.now() - 10 * 86400000).getTime(), // 10 days ago
+    createdAt: Date.now() - 10 * 86400000, // 10 days ago
     donors: [
       { id: 'd4', name: 'Hamba Allah', amount: 100000, timestamp: Date.now() - 86400000 },
       { id: 'd5', name: 'Siti Aisyah', amount: 250000, message: 'Semoga bermanfaat.', timestamp: Date.now() - 172800000 },
@@ -49,7 +56,7 @@ export const MOCK_CAMPAIGNS: Campaign[] = [
     daysRemaining: 45,
     category: 'Pendidikan',
     story: 'Banyak anak yatim dan dhuafa yang cerdas terpaksa putus sekolah karena keterbatasan biaya. Program ini bertujuan untuk memberikan beasiswa penuh yang mencakup biaya sekolah, seragam, buku, dan uang saku. Mari bersama kita wujudkan mimpi mereka dan putus rantai kemiskinan melalui pendidikan.',
-    createdAt: new Date(Date.now() - 15 * 86400000).getTime(), // 15 days ago
+    createdAt: Date.now() - 15 * 86400000, // 15 days ago
     donors: [],
   },
   {
@@ -64,7 +71,7 @@ export const MOCK_CAMPAIGNS: Campaign[] = [
     daysRemaining: 7,
     category: 'Kesehatan',
     story: 'Situasi di Gaza sangat kritis. Rumah sakit kekurangan pasokan medis dasar untuk merawat korban yang terus berjatuhan. Donasi Anda akan disalurkan dalam bentuk obat-obatan, alat infus, perban, dan peralatan medis vital lainnya untuk menyelamatkan nyawa saudara-saudara kita di sana.',
-    createdAt: new Date(Date.now() - 2 * 86400000).getTime(), // 2 days ago
+    createdAt: Date.now() - 2 * 86400000, // 2 days ago
     donors: [],
   },
   {
@@ -79,7 +86,7 @@ export const MOCK_CAMPAIGNS: Campaign[] = [
     daysRemaining: 90,
     category: 'Infrastruktur',
     story: 'Warga Muslim di Desa Sukamaju telah lama merindukan sebuah masjid. Saat ini, mereka beribadah di sebuah mushola kecil yang terbuat dari bambu. Mari bantu mereka membangun masjid permanen yang tidak hanya menjadi tempat shalat, tetapi juga pusat pendidikan Al-Quran dan kegiatan sosial masyarakat.',
-    createdAt: new Date(Date.now() - 30 * 86400000).getTime(), // 30 days ago
+    createdAt: Date.now() - 30 * 86400000, // 30 days ago
     donors: [],
   },
   {
@@ -94,7 +101,40 @@ export const MOCK_CAMPAIGNS: Campaign[] = [
     daysRemaining: 60,
     category: 'Lainnya',
     story: 'Banyak janda dhuafa yang berjuang keras untuk menafkahi keluarga. Program ini memberikan bantuan modal usaha bergulir serta pendampingan bisnis untuk membantu mereka memulai usaha kecil seperti warung, menjahit, atau membuat kue. Dengan kemandirian ekonomi, mereka dapat meningkatkan taraf hidup keluarganya.',
-    createdAt: new Date(Date.now() - 20 * 86400000).getTime(), // 20 days ago
+    createdAt: Date.now() - 20 * 86400000, // 20 days ago
     donors: [],
   },
 ];
+
+export class MigrationService {
+  static async migrateTestData(env: Env): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('Starting test data migration...');
+      
+      // Check if campaigns already exist to avoid duplicate migration
+      const existingCampaigns = await CampaignEntity.list(env);
+      if (existingCampaigns.items.length > 0) {
+        console.log(`Found ${existingCampaigns.items.length} existing campaigns. Skipping migration.`);
+        return { 
+          success: true, 
+          message: `Migration skipped - ${existingCampaigns.items.length} campaigns already exist in database` 
+        };
+      }
+      
+      // Migrate the mock campaigns to the database
+      await CampaignEntity.migrateCampaigns(env, MOCK_CAMPAIGNS);
+      
+      console.log('Test data migration completed successfully');
+      return { 
+        success: true, 
+        message: `Successfully migrated ${MOCK_CAMPAIGNS.length} campaigns to the database` 
+      };
+    } catch (error) {
+      console.error('Error during migration:', error);
+      return { 
+        success: false, 
+        message: `Migration failed: ${error instanceof Error ? error.message : String(error)}` 
+      };
+    }
+  }
+}

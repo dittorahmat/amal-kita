@@ -20,6 +20,9 @@ import { ContactPage } from './pages/ContactPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { DonationConfirmationPage } from './pages/DonationConfirmationPage';
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { CampaignCreationPage } from './pages/admin/CampaignCreationPage';
+import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -74,6 +77,21 @@ const router = createBrowserRouter([
   {
     path: "/kebijakan-privasi",
     element: <PrivacyPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/admin/login",
+    element: <AdminLoginPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/admin",
+    element: <AdminDashboardPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/admin/campaigns/create",
+    element: <CampaignCreationPage />,
     errorElement: <RouteErrorBoundary />,
   },
 ]);
