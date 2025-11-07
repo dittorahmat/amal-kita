@@ -4,7 +4,7 @@
  */
  {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "v1-amalkita-crowdfundin-881f85ce-9722-42c1-97ed-0b09d88726e1",
+	"name": "amal-kita",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-04-24",
 	"assets": {
