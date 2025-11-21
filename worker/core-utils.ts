@@ -75,6 +75,20 @@ export class GlobalDurableObject extends DurableObject<Env, unknown> {
     return removed;
   }
   async indexDrop(_rootKey: string): Promise<void> { await this.ctx.storage.deleteAll(); }
+
+  /**
+   * Get the next sequence number for a given date (YYYY-MM-DD)
+   * Returns a number starting from 1
+   */
+  async getInvoiceSequence(dateStr: string): Promise<number> {
+    const key = `invoice_seq:${dateStr}`;
+    return this.ctx.storage.transaction(async (txn) => {
+      const current = await txn.get<number>(key) || 0;
+      const next = current + 1;
+      await txn.put(key, next);
+      return next;
+    });
+  }
 }
 export interface EntityStatics<S, T extends Entity<S>> {
   new (env: Env, id: string): T; // inherited default ctor

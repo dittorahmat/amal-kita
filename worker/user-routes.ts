@@ -12,6 +12,7 @@ const donationSchema = z.object({
   amount: z.number().positive(),
   name: z.string().min(1),
   message: z.string().optional(),
+  email: z.string().email('Email tidak valid').optional(),
 });
 
 const createCampaignSchema = z.object({
@@ -20,9 +21,7 @@ const createCampaignSchema = z.object({
   organizer: z.string().min(1, 'Penyelenggara wajib diisi').max(100, 'Nama penyelenggara terlalu panjang'),
   imageUrl: z.string().url('URL gambar tidak valid').optional().or(z.string().min(1, 'URL gambar wajib diisi')),
   targetAmount: z.number().positive('Target donasi harus lebih dari 0'),
-  category: z.enum(['Pendidikan', 'Kemanusiaan', 'Kesehatan', 'Infrastruktur', 'Lainnya'], {
-    errorMap: () => ({ message: 'Kategori tidak valid' })
-  }),
+  category: z.enum(['Pendidikan', 'Kemanusiaan', 'Kesehatan', 'Infrastruktur', 'Lainnya']).default('Lainnya'),
   story: z.string().min(1, 'Cerita kampanye wajib diisi'),
   daysRemaining: z.number().int().positive('Sisa hari harus lebih dari 0'),
 });
@@ -52,11 +51,11 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       // Check if request is multipart (for file upload) or JSON
       const contentType = c.req.header('content-type');
       let campaignData: any;
-      
+
       if (contentType?.includes('multipart/form-data')) {
         // Handle multipart form data (file upload)
         const formData = await c.req.parseBody();
-        
+
         // Validate required fields from form data
         const title = formData.title as string;
         const description = formData.description as string;
@@ -65,39 +64,39 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const category = formData.category as string;
         const story = formData.story as string;
         const daysRemaining = Number(formData.daysRemaining);
-        
+
         // Validate required fields
         if (!title || !description || !organizer || !targetAmount || !category || !story || !daysRemaining) {
           return bad(c, 'Missing required fields');
         }
-        
+
         // Process image upload if provided
         let imageUrl = 'https://placehold.co/600x400?text=No+Image'; // Default image
-        
+
         if (formData.image && typeof formData.image !== 'string') {
           const imageFile = formData.image as File;
-          
+
           // Validate image
           const imageService = new ImageService(c.env);
           const validation = imageService.validateImage(imageFile.type, imageFile.size);
-          
+
           if (!validation.isValid) {
             return bad(c, `Validation error: ${validation.errors.join(', ')}`);
           }
-          
+
           // Upload image to R2
           const uploadResult = await imageService.uploadImage(
             await imageFile.arrayBuffer(),
             imageFile.name,
             imageFile.type
           );
-          
+
           imageUrl = uploadResult.url;
         } else if (formData.imageUrl) {
           // If no file but imageUrl is provided, use that
           imageUrl = formData.imageUrl as string;
         }
-        
+
         campaignData = {
           title,
           description,
@@ -112,24 +111,24 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         // Handle JSON request
         const body = await c.req.json();
         const validation = createCampaignSchema.safeParse(body);
-        
+
         if (!validation.success) {
-          const errors = validation.error.errors.map(err => err.message).join(', ');
+          const errors = validation.error.issues.map(issue => issue.message).join(', ');
           return bad(c, `Validation error: ${errors}`);
         }
-        
+
         campaignData = validation.data;
       }
-      
+
       // Ensure numeric fields are properly converted
       const processedCampaignData = {
         ...campaignData,
         targetAmount: Number(campaignData.targetAmount),
         daysRemaining: Number(campaignData.daysRemaining),
       };
-      
+
       const id = `camp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Create campaign object
       const newCampaign = {
         id,
@@ -146,10 +145,10 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         donors: [],
         createdAt: Date.now(),
       };
-      
+
       // Save the new campaign to Durable Object
       await CampaignEntity.create(c.env, newCampaign);
-      
+
       return ok(c, newCampaign);
     } catch (error) {
       console.error('Error creating campaign:', error);
@@ -162,19 +161,19 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     try {
       const { id } = c.req.param();
       const campaign = new CampaignEntity(c.env, id);
-      
+
       if (!await campaign.exists()) {
         return notFound(c, 'Campaign not found');
       }
-      
+
       const body = await c.req.json();
       const validation = createCampaignSchema.partial().safeParse(body); // Allow partial updates
-      
+
       if (!validation.success) {
-        const errors = validation.error.errors.map(err => err.message).join(', ');
+        const errors = validation.error.issues.map(issue => issue.message).join(', ');
         return bad(c, `Validation error: ${errors}`);
       }
-      
+
       // Get current campaign state and update with new values
       const currentCampaign = await campaign.getState();
       const updatedCampaign = {
@@ -184,10 +183,10 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         ...(validation.data.targetAmount !== undefined && { targetAmount: Number(validation.data.targetAmount) }),
         ...(validation.data.daysRemaining !== undefined && { daysRemaining: Number(validation.data.daysRemaining) }),
       };
-      
+
       // Update the campaign in Durable Object
       await campaign.save(updatedCampaign);
-      
+
       return ok(c, updatedCampaign);
     } catch (error) {
       console.error('Error updating campaign:', error);
@@ -199,7 +198,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   app.post('/api/migrate-test-data', async (c) => {
     try {
       const result = await MigrationService.migrateTestData(c.env);
-      
+
       if (result.success) {
         return ok(c, { message: result.message });
       } else {
@@ -215,13 +214,13 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   app.delete('/api/campaigns/:id', async (c) => {
     try {
       const { id } = c.req.param();
-      
+
       const deleted = await CampaignEntity.delete(c.env, id);
-      
+
       if (!deleted) {
         return notFound(c, 'Campaign not found');
       }
-      
+
       return ok(c, { message: 'Campaign deleted successfully' });
     } catch (error) {
       console.error('Error deleting campaign:', error);
@@ -249,12 +248,12 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       console.log('Validation errors:', validation.error.toString());
       return bad(c, validation.error.toString());
     }
-    
+
     // Process the donation first
     console.log('About to add donation to campaign');
     const updatedCampaign = await campaign.addDonation(validation.data);
     console.log('Donation added to campaign, creating donor object');
-    
+
     // Create a donor object from the validation data
     // Using a simple timestamp-based ID instead of crypto.randomUUID() to avoid potential issues in Workers environment
     const donor = {
@@ -262,22 +261,23 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       name: validation.data.name,
       amount: validation.data.amount,
       message: validation.data.message,
+      email: validation.data.email,
       timestamp: Date.now()
     };
     console.log('Donor object created:', donor.name, donor.amount);
-    
+
     // Attempt to create an invoice in Odoo (this is non-blocking to the donation process)
     try {
       // Get Odoo configuration
       console.log('Checking Odoo configuration...');
       const odooConfig = getOdooConfig(c.env);
-      
+
       if (odooConfig) {
         console.log('Odoo configuration found, initializing service...');
-        const odooService = new OdooService(odooConfig);
-        
+        const odooService = new OdooService(odooConfig, c.env);
+
         console.log(`Running Odoo integration for donation by ${donor.name}, amount: ${donor.amount}`);
-        
+
         // Run Odoo integration using waitUntil to ensure it completes even if it takes time
         // This is important for Cloudflare Workers async operations
         const odooPromise = odooService.createInvoiceForDonation(donor, updatedCampaign)
@@ -294,7 +294,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
             console.error('Failed donation details:', { donorName: donor.name, amount: donor.amount, campaignId: id });
             // Don't fail the donation process even if Odoo call fails
           });
-        
+
         // Use waitUntil to ensure the async operation completes
         c.executionCtx.waitUntil(odooPromise);
       } else {
@@ -302,10 +302,10 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       }
     } catch (error) {
       console.error('Unexpected error in Odoo integration setup:', error);
-      console.error('Error stack:', error.stack);
+      console.error('Error stack:', (error instanceof Error) ? error.stack : 'No stack trace available');
       // Don't fail the donation even if Odoo integration setup fails
     }
-    
+
     return ok(c, updatedCampaign);
   });
 }

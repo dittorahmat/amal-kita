@@ -98,6 +98,8 @@ export default ({ mode }: { mode: string }) => {
           sourcemapExcludeSources: false, // Include original source in source maps
         },
       },
+      // Increase chunk size warning limit to reduce warnings
+      chunkSizeWarningLimit: 2000, // Increase to 2MB to reduce warnings
     },
     customLogger: env.VITE_LOGGER_TYPE === 'json' ? customLogger : undefined,
     // Enable source maps in development too

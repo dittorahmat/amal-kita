@@ -8,6 +8,7 @@ export interface Donor {
   name: string;
   amount: number;
   message?: string;
+  email?: string;
   timestamp: number;
 }
 export interface Donation {

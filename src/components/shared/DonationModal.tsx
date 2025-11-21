@@ -24,6 +24,7 @@ const donationSchema = z.object({
   amount: z.number().min(10000, 'Donasi minimal Rp 10.000'),
   name: z.string().optional(),
   message: z.string().optional(),
+  email: z.string().email('Email tidak valid').optional(),
   isAnonymous: z.boolean(),
 }).refine(data => !data.isAnonymous ? !!data.name && data.name.trim().length > 0 : true, {
   message: 'Nama harus diisi jika tidak berdonasi sebagai anonim',
@@ -58,6 +59,7 @@ export function DonationModal({ campaignId, campaignTitle, open, onOpenChange, o
         amount: data.amount,
         name: donorName,
         message: data.message,
+        email: data.email || undefined,
       };
       await api(`/api/campaigns/${campaignId}/donations`, {
         method: 'POST',
@@ -116,11 +118,18 @@ export function DonationModal({ campaignId, campaignTitle, open, onOpenChange, o
             </div>
           </div>
           {!isAnonymous && (
-            <div>
-              <Label htmlFor="name" className="font-semibold">Nama Anda</Label>
-              <Input id="name" placeholder="Masukkan nama lengkap Anda" className="mt-2" {...register('name')} />
-              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
-            </div>
+            <>
+              <div>
+                <Label htmlFor="name" className="font-semibold">Nama Anda</Label>
+                <Input id="name" placeholder="Masukkan nama lengkap Anda" className="mt-2" {...register('name')} />
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="email" className="font-semibold">Email Anda (Opsional)</Label>
+                <Input id="email" type="email" placeholder="Masukkan alamat email Anda" className="mt-2" {...register('email')} />
+                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
+              </div>
+            </>
           )}
           <div>
             <Label htmlFor="message" className="font-semibold">Pesan Kebaikan (Opsional)</Label>
