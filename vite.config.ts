@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 import { exec } from "node:child_process";
 import pino from "pino";
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { visualizer } from "rollup-plugin-visualizer";
 
 const logger = pino();
 
@@ -89,13 +90,37 @@ function watchDependenciesPlugin() {
 export default ({ mode }: { mode: string }) => {
   const env = loadEnv(mode, process.cwd());
   return defineConfig({
-    plugins: [react(), cloudflare(), watchDependenciesPlugin()],
+    plugins: [
+      react(),
+      cloudflare(),
+      watchDependenciesPlugin(),
+      ...(mode === 'analyze' ? [visualizer({
+        filename: "./dist/client/stats.html",
+        open: true,
+        gzipSize: true,
+        brotliSize: true,
+      })] : []),
+    ],
     build: {
       minify: true,
-      sourcemap: "inline", // Use inline source maps for better error reporting
+      sourcemap: false, // Disable sourcemaps to reduce bundle size
       rollupOptions: {
         output: {
-          sourcemapExcludeSources: false, // Include original source in source maps
+          sourcemapExcludeSources: true, // Exclude sources from source maps to reduce size
+          // Simplified chunking to avoid SSR issues with useLayoutEffect
+          manualChunks: (id) => {
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                return 'react-vendor';
+              }
+              if (id.includes('@radix-ui') || id.includes('@headlessui')) {
+                return 'ui';
+              }
+              if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
+                return 'forms';
+              }
+            }
+          },
         },
       },
       // Increase chunk size warning limit to reduce warnings

@@ -9,20 +9,22 @@ import {
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import '@/index.css'
+
+// Import pages directly to avoid SSR issues with useLayoutEffect
 import { HomePage } from '@/pages/HomePage'
-import { CampaignsPage } from "./pages/CampaignsPage";
-import { CampaignDetailPage } from "./pages/CampaignDetailPage";
-import { ZakatPage } from "./pages/ZakatPage";
-import { AboutPage } from "./pages/AboutPage";
-import { DonationSuccessPage } from "./pages/DonationSuccessPage";
-import { TeamPage } from './pages/TeamPage';
-import { ContactPage } from './pages/ContactPage';
-import { TermsPage } from './pages/TermsPage';
-import { PrivacyPage } from './pages/PrivacyPage';
-import { DonationConfirmationPage } from './pages/DonationConfirmationPage';
-import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
-import { CampaignCreationPage } from './pages/admin/CampaignCreationPage';
-import { AdminLoginPage } from './pages/admin/AdminLoginPage';
+import { CampaignsPage } from "@/pages/CampaignsPage";
+import { CampaignDetailPage } from "@/pages/CampaignDetailPage";
+import { ZakatPage } from "@/pages/ZakatPage";
+import { AboutPage } from "@/pages/AboutPage";
+import { DonationSuccessPage } from "@/pages/DonationSuccessPage";
+import { TeamPage } from '@/pages/TeamPage';
+import { ContactPage } from '@/pages/ContactPage';
+import { TermsPage } from '@/pages/TermsPage';
+import { PrivacyPage } from '@/pages/PrivacyPage';
+import { DonationConfirmationPage } from '@/pages/DonationConfirmationPage';
+import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
+import { CampaignCreationPage } from '@/pages/admin/CampaignCreationPage';
+import { AdminLoginPage } from '@/pages/admin/AdminLoginPage';
 const router = createBrowserRouter([
   {
     path: "/",
