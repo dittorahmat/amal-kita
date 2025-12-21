@@ -4,26 +4,55 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { CampaignCard } from '@/components/shared/CampaignCard';
-import { ArrowRight, HeartHandshake, ShieldCheck, TrendingUp } from 'lucide-react';
+import { EventCard } from '@/components/shared/EventCard';
+import { ArrowRight, HeartHandshake, ShieldCheck, TrendingUp, Calendar } from 'lucide-react';
 import { api } from '@/lib/api-client';
-import type { Campaign } from '@shared/types';
+import type { Campaign, Event } from '@shared/types';
 import { Skeleton } from '@/components/ui/skeleton';
 export function HomePage() {
   const [featuredCampaigns, setFeaturedCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
+  const [loadingCampaigns, setLoadingCampaigns] = useState(true);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        setLoading(true);
+        setLoadingCampaigns(true);
         const data = await api<Campaign[]>('/api/campaigns');
         setFeaturedCampaigns(data.slice(0, 3));
       } catch (error) {
         console.error("Failed to fetch campaigns:", error);
       } finally {
-        setLoading(false);
+        setLoadingCampaigns(false);
       }
     };
+
+    const fetchEvents = async () => {
+      try {
+        setLoadingEvents(true);
+        const data = await api<Event[]>('/api/events');
+        // Check if data is valid before processing
+        if (data && Array.isArray(data)) {
+          // Filter to only active events and sort by date (closest first)
+          const activeEvents = data
+            .filter(event => event.status === 'active')
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .slice(0, 3);
+          setFeaturedEvents(activeEvents);
+        } else {
+          setFeaturedEvents([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch events:", error);
+        setFeaturedEvents([]);
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+
     fetchCampaigns();
+    fetchEvents();
   }, []);
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -61,7 +90,7 @@ export function HomePage() {
               </p>
             </div>
             <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8">
-              {loading
+              {loadingCampaigns
                 ? Array.from({ length: 3 }).map((_, index) => (
                     <div key={index} className="flex flex-col space-y-3">
                       <Skeleton className="h-[192px] w-full rounded-xl" />
@@ -85,6 +114,42 @@ export function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Featured Events Section */}
+        <section className="py-16 md:py-24">
+          <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <h2 className="font-display text-3xl font-bold md:text-4xl">Acara Terbaru</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+                Ikuti acara-acara menarik yang sesuai dengan minat dan nilai Anda.
+              </p>
+            </div>
+            <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8">
+              {loadingEvents
+                ? Array.from({ length: 3 }).map((_, index) => (
+                    <div key={index} className="flex flex-col space-y-3">
+                      <Skeleton className="h-[192px] w-full rounded-xl" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-4/5" />
+                      </div>
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ))
+                : featuredEvents.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+            </div>
+            <div className="mt-12 text-center">
+              <Button asChild variant="link" className="text-lg text-brand-primary">
+                <Link to="/event">
+                  Lihat Semua Acara <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+
         {/* How It Works Section */}
         <section className="bg-gray-50 dark:bg-gray-900/50 py-16 md:py-24">
           <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

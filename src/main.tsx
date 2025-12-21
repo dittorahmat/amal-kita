@@ -22,8 +22,13 @@ import { ContactPage } from '@/pages/ContactPage';
 import { TermsPage } from '@/pages/TermsPage';
 import { PrivacyPage } from '@/pages/PrivacyPage';
 import { DonationConfirmationPage } from '@/pages/DonationConfirmationPage';
+import { EventListPage } from '@/pages/EventListPage';
+import { EventDetailPage } from '@/pages/EventDetailPage';
+import { EventRegistrationSuccessPage } from '@/pages/EventRegistrationSuccessPage';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { CampaignCreationPage } from '@/pages/admin/CampaignCreationPage';
+import { EventCreationPage } from '@/pages/admin/EventCreationPage';
+import { EventParticipantsPage } from '@/pages/admin/EventParticipantsPage';
 import { AdminLoginPage } from '@/pages/admin/AdminLoginPage';
 const router = createBrowserRouter([
   {
@@ -82,6 +87,21 @@ const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />,
   },
   {
+    path: "/event",
+    element: <EventListPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/event/:id",
+    element: <EventDetailPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/event/:eventId/success",
+    element: <EventRegistrationSuccessPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
     path: "/admin/login",
     element: <AdminLoginPage />,
     errorElement: <RouteErrorBoundary />,
@@ -94,6 +114,16 @@ const router = createBrowserRouter([
   {
     path: "/admin/campaigns/create",
     element: <CampaignCreationPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/admin/events/create",
+    element: <EventCreationPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/admin/events/:eventId/participants",
+    element: <EventParticipantsPage />,
     errorElement: <RouteErrorBoundary />,
   },
 ]);

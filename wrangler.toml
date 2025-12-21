@@ -6,11 +6,16 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 binding = "ASSETS"
 
-# R2 Bucket for image storage
+# R2 Buckets for image storage
 [[r2_buckets]]
 binding = "CAMPAIGN_IMAGES"
 bucket_name = "campaign-images"
 preview_bucket_name = "campaign-images-preview"
+
+[[r2_buckets]]
+binding = "EVENT_IMAGES"
+bucket_name = "event-images"
+preview_bucket_name = "event-images-preview"
 
 # Durable Objects
 [[durable_objects.bindings]]
@@ -41,9 +46,17 @@ ODOO_DATABASE = "odoo"
 binding = "CAMPAIGN_IMAGES"
 bucket_name = "campaign-images-dev"
 
+[[env.development.r2_buckets]]
+binding = "EVENT_IMAGES"
+bucket_name = "event-images-dev"
+
 [[env.production.r2_buckets]]
 binding = "CAMPAIGN_IMAGES"
 bucket_name = "campaign-images"
+
+[[env.production.r2_buckets]]
+binding = "EVENT_IMAGES"
+bucket_name = "event-images"
 
 [[env.development.durable_objects.bindings]]
 name = "GlobalDurableObject"

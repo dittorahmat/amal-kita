@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from 'zod';
 import type { Env } from './core-utils';
 import { CampaignEntity } from "./entities";
+import { EventEntity } from "./event-entity";
 import { ok, notFound, bad } from './core-utils';
 import { OdooService } from './services/odoo-service';
 import { getOdooConfig } from './config';
@@ -77,7 +78,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
           const imageFile = formData.image as File;
 
           // Validate image
-          const imageService = new ImageService(c.env);
+          const imageService = new ImageService(c.env, 'campaign');
           const validation = imageService.validateImage(imageFile.type, imageFile.size);
 
           if (!validation.isValid) {
@@ -88,7 +89,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
           const uploadResult = await imageService.uploadImage(
             await imageFile.arrayBuffer(),
             imageFile.name,
-            imageFile.type
+            imageFile.type,
+            'campaign'
           );
 
           imageUrl = uploadResult.url;
@@ -307,5 +309,276 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }
 
     return ok(c, updatedCampaign);
+  });
+
+  // EVENTS
+  // GET ALL EVENTS
+  app.get('/api/events', async (c) => {
+    console.log('=== GET /api/events endpoint hit ===');
+    try {
+      const page = await EventEntity.list(c.env);
+      console.log(`Events retrieved: ${page.items.length} items`);
+      console.log('First few event IDs:', page.items.slice(0, 5).map(e => e.id));
+      return ok(c, page.items);
+    } catch (error) {
+      console.error('Error in GET /api/events:', error);
+      return bad(c, `Failed to retrieve events: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
+  // GET SINGLE EVENT
+  app.get('/api/events/:id', async (c) => {
+    const { id } = c.req.param();
+    const event = new EventEntity(c.env, id);
+    if (!await event.exists()) {
+      return notFound(c, 'Event not found');
+    }
+    const data = await event.getState();
+    return ok(c, data);
+  });
+
+  // CREATE NEW EVENT
+  app.post('/api/events', async (c) => {
+    console.log('=== POST /api/events endpoint hit ===');
+    try {
+      // Check if request is multipart (for file upload) or JSON
+      const contentType = c.req.header('content-type');
+      let eventData: any;
+
+      if (contentType?.includes('multipart/form-data')) {
+        // Handle multipart form data (file upload)
+        const formData = await c.req.parseBody();
+
+        // Validate required fields from form data
+        const title = formData.title as string;
+        const description = formData.description as string;
+        const date = formData.date as string;
+        const time = formData.time as string;
+        const capacity = formData.capacity ? Number(formData.capacity) : null; // null for unlimited
+        const price = Number(formData.price);
+        const location = formData.location as string || undefined;
+        const status = formData.status as string || 'active';
+        const campaignId = formData.campaignId as string || undefined;
+
+        console.log('Processing multipart form data for event creation:', { title, status });
+
+        // Validate required fields
+        if (!title || !description || !date || !time || price === undefined) {
+          return bad(c, 'Missing required fields');
+        }
+
+        // Process image upload if provided
+        let imageUrl = 'https://placehold.co/600x400?text=No+Image'; // Default image
+
+        if (formData.image && typeof formData.image !== 'string') {
+          const imageFile = formData.image as File;
+
+          // Validate image
+          const imageService = new ImageService(c.env, 'event');
+          const validation = imageService.validateImage(imageFile.type, imageFile.size);
+
+          if (!validation.isValid) {
+            return bad(c, `Validation error: ${validation.errors.join(', ')}`);
+          }
+
+          // Upload image to R2
+          const uploadResult = await imageService.uploadImage(
+            await imageFile.arrayBuffer(),
+            imageFile.name,
+            imageFile.type,
+            'event'
+          );
+
+          imageUrl = uploadResult.url;
+        } else if (formData.imageUrl) {
+          // If no file but imageUrl is provided, use that
+          imageUrl = formData.imageUrl as string;
+        }
+
+        eventData = {
+          title,
+          description,
+          date,
+          time,
+          location,
+          imageUrl,
+          capacity,
+          price,
+          status,
+          campaignId,
+        };
+      } else {
+        // Handle JSON request
+        const body = await c.req.json();
+        console.log('Processing JSON data for event creation:', body);
+        const validation = z.object({
+          title: z.string().min(1, 'Judul event wajib diisi').max(200, 'Judul event terlalu panjang'),
+          description: z.string().min(1, 'Deskripsi event wajib diisi').max(1000, 'Deskripsi event terlalu panjang'),
+          date: z.string().datetime('Tanggal harus dalam format ISO string'),
+          time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Format waktu harus HH:MM'),
+          location: z.string().optional(),
+          imageUrl: z.string().url('URL gambar tidak valid').optional().or(z.string().min(1, 'URL gambar wajib diisi')),
+          capacity: z.number().positive('Kapasitas harus lebih dari 0').nullable(),
+          price: z.number().min(0, 'Harga tidak boleh negatif'),
+          status: z.enum(['active', 'inactive', 'cancelled', 'completed']).default('active'),
+          campaignId: z.string().optional(),
+        }).safeParse(body);
+
+        if (!validation.success) {
+          const errors = validation.error.issues.map(issue => issue.message).join(', ');
+          return bad(c, `Validation error: ${errors}`);
+        }
+
+        eventData = validation.data;
+      }
+
+      // Ensure numeric fields are properly converted
+      const processedEventData = {
+        ...eventData,
+        capacity: eventData.capacity === null ? null : Number(eventData.capacity),
+        price: Number(eventData.price),
+      };
+
+      const id = `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('Generated event ID:', id);
+
+      // Create event object
+      const newEvent = {
+        id,
+        title: processedEventData.title,
+        description: processedEventData.description,
+        date: processedEventData.date,
+        time: processedEventData.time,
+        location: processedEventData.location,
+        imageUrl: processedEventData.imageUrl || 'https://placehold.co/600x400?text=No+Image',
+        capacity: processedEventData.capacity,
+        registeredCount: 0,
+        price: processedEventData.price,
+        status: processedEventData.status,
+        createdAt: Date.now(),
+        campaignId: processedEventData.campaignId,
+        participants: [],
+      };
+      console.log('New event object created:', { id: newEvent.id, title: newEvent.title, status: newEvent.status });
+
+      // Save the new event to Durable Object
+      await EventEntity.create(c.env, newEvent);
+      console.log('Event successfully saved to Durable Object:', newEvent.id);
+
+      return ok(c, newEvent);
+    } catch (error) {
+      console.error('Error creating event:', error);
+      return bad(c, 'Failed to create event');
+    }
+  });
+
+  // UPDATE EXISTING EVENT
+  app.put('/api/events/:id', async (c) => {
+    try {
+      const { id } = c.req.param();
+      const event = new EventEntity(c.env, id);
+
+      if (!await event.exists()) {
+        return notFound(c, 'Event not found');
+      }
+
+      const body = await c.req.json();
+      const validation = z.object({
+        title: z.string().min(1, 'Judul event wajib diisi').max(200, 'Judul event terlalu panjang').optional(),
+        description: z.string().min(1, 'Deskripsi event wajib diisi').max(1000, 'Deskripsi event terlalu panjang').optional(),
+        date: z.string().datetime('Tanggal harus dalam format ISO string').optional(),
+        time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Format waktu harus HH:MM').optional(),
+        location: z.string().optional(),
+        imageUrl: z.string().url('URL gambar tidak valid').optional().or(z.string().min(1, 'URL gambar wajib diisi')).optional(),
+        capacity: z.number().positive('Kapasitas harus lebih dari 0').nullable().optional(),
+        price: z.number().min(0, 'Harga tidak boleh negatif').optional(),
+        status: z.enum(['active', 'inactive', 'cancelled', 'completed']).optional(),
+        campaignId: z.string().optional(),
+      }).safeParse(body); // Allow partial updates
+
+      if (!validation.success) {
+        const errors = validation.error.issues.map(issue => issue.message).join(', ');
+        return bad(c, `Validation error: ${errors}`);
+      }
+
+      // Get current event state and update with new values
+      const currentEvent = await event.getState();
+      const updatedEvent = {
+        ...currentEvent,
+        ...validation.data,
+        // Ensure numeric fields are properly handled if provided
+        ...(validation.data.capacity !== undefined && {
+          capacity: validation.data.capacity === null ? null : Number(validation.data.capacity)
+        }),
+        ...(validation.data.price !== undefined && { price: Number(validation.data.price) }),
+      };
+
+      // Update the event in Durable Object
+      await event.save(updatedEvent);
+
+      return ok(c, updatedEvent);
+    } catch (error) {
+      console.error('Error updating event:', error);
+      return bad(c, 'Failed to update event');
+    }
+  });
+
+  // DELETE EVENT
+  app.delete('/api/events/:id', async (c) => {
+    try {
+      const { id } = c.req.param();
+
+      const deleted = await EventEntity.delete(c.env, id);
+
+      if (!deleted) {
+        return notFound(c, 'Event not found');
+      }
+
+      return ok(c, { message: 'Event deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      return bad(c, 'Failed to delete event');
+    }
+  });
+
+  // REGISTER TO EVENT
+  app.post('/api/events/:id/register', async (c) => {
+    try {
+      const { id } = c.req.param();
+      const event = new EventEntity(c.env, id);
+
+      if (!await event.exists()) {
+        return notFound(c, 'Event not found');
+      }
+
+      const body = await c.req.json();
+      const validation = z.object({
+        name: z.string().min(1, 'Nama wajib diisi').max(100, 'Nama terlalu panjang'),
+        email: z.string().email('Email tidak valid'),
+        phone: z.string().min(10, 'Nomor telepon minimal 10 digit').max(15, 'Nomor telepon maksimal 15 digit'),
+      }).safeParse(body);
+
+      if (!validation.success) {
+        const errors = validation.error.issues.map(issue => issue.message).join(', ');
+        return bad(c, `Validation error: ${errors}`);
+      }
+
+      // Register participant
+      const result = await event.registerParticipant({
+        ...validation.data,
+        eventId: id,
+      });
+
+      if (!result.success) {
+        return bad(c, result.error || 'Failed to register for event');
+      }
+
+      // Get updated event data and return it
+      const updatedEvent = await event.getState();
+      return ok(c, updatedEvent);
+    } catch (error) {
+      console.error('Error registering for event:', error);
+      return bad(c, 'Failed to register for event');
+    }
   });
 }

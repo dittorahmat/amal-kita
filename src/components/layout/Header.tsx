@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 const navLinks = [
   { href: '/', label: 'Beranda' },
   { href: '/kampanye', label: 'Kampanye' },
+  { href: '/event', label: 'Acara' },
   { href: '/zakat', label: 'Zakat' },
   { href: '/tentang-kami', label: 'Tentang Kami' },
 ];

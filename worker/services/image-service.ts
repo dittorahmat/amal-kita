@@ -12,9 +12,9 @@ export interface ImageUploadResult {
 
 export class ImageService {
   private bucket: R2Bucket;
-  
-  constructor(env: Env) {
-    this.bucket = env.CAMPAIGN_IMAGES;
+
+  constructor(env: Env, imageType: 'campaign' | 'event' = 'campaign') {
+    this.bucket = imageType === 'event' ? env.EVENT_IMAGES : env.CAMPAIGN_IMAGES;
   }
 
   /**
@@ -24,9 +24,9 @@ export class ImageService {
    * @param contentType - MIME type of the image
    * @returns Object containing the image URL and metadata
    */
-  async uploadImage(imageData: string | ArrayBuffer, fileName: string, contentType: string): Promise<ImageUploadResult> {
+  async uploadImage(imageData: string | ArrayBuffer, fileName: string, contentType: string, imageType: 'campaign' | 'event' = 'campaign'): Promise<ImageUploadResult> {
     // Generate a unique key for the image
-    const imageKey = `campaigns/${Date.now()}_${Math.random().toString(36).substr(2, 9)}/${fileName}`;
+    const imageKey = `${imageType}s/${Date.now()}_${Math.random().toString(36).substr(2, 9)}/${fileName}`;
     
     let data: ArrayBuffer;
     if (typeof imageData === 'string') {

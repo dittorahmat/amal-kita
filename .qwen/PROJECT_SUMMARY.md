@@ -68,6 +68,33 @@ Create a comprehensive donation platform with Cloudflare Durable Objects databas
 - [DONE] Added journal and payment terms configuration to ensure proper invoice setup for payments
 - [DONE] Improved account lookup logic to use modern Odoo account type fields
 - [DONE] Added invoice verification after posting to ensure proper configurations
+- [DONE] Added comprehensive event feature with event listing and registration functionality
+- [DONE] Defined event data structures and types in shared/types.ts
+- [DONE] Created EventDurableObject for event management in worker/event-entity.ts
+- [DONE] Implemented API endpoints for events in worker/user-routes.ts
+- [DONE] Created EventCard component for displaying events
+- [DONE] Created EventListPage for browsing all events
+- [DONE] Created EventDetailPage with registration form
+- [DONE] Implemented registration form validation in EventDetailPage
+- [DONE] Added event management to admin dashboard with tabbed interface
+- [DONE] Created EventCreationPage for admin event creation/editing
+- [DONE] Added event routes to the main router
+- [DONE] Added event link to the header navigation
+- [DONE] Added featured events section to the homepage
+- [DONE] Enhanced EventListPage to fetch events directly via useEffect to fix display issues
+- [DONE] Added debugging logs to event endpoints to help troubleshoot data retrieval issues
+- [DONE] Fixed Index constructor issue in EventEntity that was preventing event creation
+- [DONE] Implemented proper error handling and loading states in event listing page
+- [DONE] Verified events are properly stored in Durable Objects and retrieved via API
+- [DONE] Fixed malformed Odoo_BASE_URL in .dev.vars that was causing 404 authentication errors
+- [DONE] Updated EventDetailPage to fetch data directly via useEffect to fix component rendering errors
+- [DONE] Added proper error handling and loading states to event detail page
+- [DONE] Fixed missing header and footer on EventListPage and EventDetailPage components
+- [DONE] Implemented EventRegistrationSuccessPage for confirmation after successful event registration
+- [DONE] Created EventParticipantsPage to view registered participants for each event
+- [DONE] Added route and functionality to view participants list in admin dashboard
+- [DONE] Enhanced AdminDashboardPage with participant view button and proper tooltips for all action buttons
+- [DONE] Added export to CSV functionality for event participants data
 
 ## Current Plan
 - [COMPLETED] All features implemented, tested, and successfully deployed
