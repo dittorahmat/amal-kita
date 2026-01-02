@@ -156,22 +156,68 @@ function EventCreationContent() {
     setLoading(true);
     try {
       if (isEditMode && eventId) {
-        // Update existing event
-        // Convert date to ISO format for API
-        const isoDate = new Date(`${data.date}T00:00:00`).toISOString();
+        // Update existing event - check if we have a file to upload
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        const file = fileInput?.files?.[0];
 
-        await api(`/api/events/${eventId}`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            ...data,
-            date: isoDate,
-            capacity: data.capacity === '' ? null : Number(data.capacity),
-            price: Number(data.price),
-          }),
-        });
+        if (file) {
+          // If we have a file, we'll use multipart form data for update
+          const formData = new FormData();
 
-        toast.success('Acara berhasil diperbarui!');
-        navigate('/admin');
+          // Add all form fields
+          formData.append('title', data.title);
+          formData.append('description', data.description);
+
+          // Convert date to ISO format for API
+          const isoDate = data.date ? new Date(`${data.date}T00:00:00`).toISOString() : '';
+          formData.append('date', isoDate);
+
+          formData.append('time', data.time);
+          formData.append('location', data.location || '');
+          formData.append('capacity', data.capacity === '' ? 'null' : String(data.capacity));
+          formData.append('price', String(Number(data.price)));
+          formData.append('status', data.status);
+          formData.append('campaignId', data.campaignId || '');
+          formData.append('image', file);
+
+          // Submit using fetch directly for multipart form data with relative path
+          const response = await fetch(`/api/events/${eventId}`, {
+            method: 'PUT',
+            body: formData,
+            // Don't set Content-Type header for multipart form data - let the browser set it with the boundary
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to update event');
+          }
+
+          const result = await response.json();
+          if (result.success) {
+            toast.success('Acara berhasil diperbarui!');
+            navigate('/admin');
+          } else {
+            throw new Error(result.error || 'Failed to update event');
+          }
+        } else {
+          // If no file, we'll submit as JSON
+          // Convert date to ISO format for API
+          const isoDate = data.date ? new Date(`${data.date}T00:00:00`).toISOString() : undefined;
+
+          await api(`/api/events/${eventId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              ...data,
+              // Only update date if it was provided in the form
+              ...(data.date && { date: isoDate }),
+              capacity: data.capacity === '' ? null : Number(data.capacity),
+              price: Number(data.price),
+            }),
+          });
+
+          toast.success('Acara berhasil diperbarui!');
+          navigate('/admin');
+        }
       } else {
         // Create new event
         // Convert date to ISO format for API

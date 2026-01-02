@@ -168,22 +168,82 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         return notFound(c, 'Campaign not found');
       }
 
-      const body = await c.req.json();
-      const validation = createCampaignSchema.partial().safeParse(body); // Allow partial updates
+      // Check if request is multipart (for file upload) or JSON
+      const contentType = c.req.header('content-type');
+      let campaignData: any;
 
-      if (!validation.success) {
-        const errors = validation.error.issues.map(issue => issue.message).join(', ');
-        return bad(c, `Validation error: ${errors}`);
+      if (contentType?.includes('multipart/form-data')) {
+        // Handle multipart form data (file upload)
+        const formData = await c.req.parseBody();
+
+        // Validate required fields from form data (only if they exist in form data)
+        const title = formData.title as string;
+        const description = formData.description as string;
+        const organizer = formData.organizer as string;
+        const targetAmount = formData.targetAmount ? Number(formData.targetAmount) : undefined;
+        const category = formData.category as string;
+        const story = formData.story as string;
+        const daysRemaining = formData.daysRemaining ? Number(formData.daysRemaining) : undefined;
+
+        // Process image upload if provided
+        let imageUrl = undefined; // Don't change if not provided
+
+        if (formData.image && typeof formData.image !== 'string') {
+          const imageFile = formData.image as File;
+
+          // Validate image
+          const imageService = new ImageService(c.env, 'campaign');
+          const validation = imageService.validateImage(imageFile.type, imageFile.size);
+
+          if (!validation.isValid) {
+            return bad(c, `Validation error: ${validation.errors.join(', ')}`);
+          }
+
+          // Upload image to storage (R2 with Cloudinary fallback)
+          const uploadResult = await imageService.uploadImage(
+            await imageFile.arrayBuffer(),
+            imageFile.name,
+            imageFile.type,
+            'campaign'
+          );
+
+          imageUrl = uploadResult.url;
+        } else if (formData.imageUrl) {
+          // If no file but imageUrl is provided, use that
+          imageUrl = formData.imageUrl as string;
+        }
+
+        campaignData = {
+          ...(title && { title }),
+          ...(description && { description }),
+          ...(organizer && { organizer }),
+          ...(imageUrl && { imageUrl }),
+          ...(targetAmount !== undefined && { targetAmount }),
+          ...(category && { category }),
+          ...(story && { story }),
+          ...(daysRemaining !== undefined && { daysRemaining }),
+        };
+      } else {
+        // Handle JSON request
+        const body = await c.req.json();
+        const validation = createCampaignSchema.partial().safeParse(body); // Allow partial updates
+
+        if (!validation.success) {
+          const errors = validation.error.issues.map(issue => issue.message).join(', ');
+          return bad(c, `Validation error: ${errors}`);
+        }
+
+        campaignData = validation.data;
       }
 
       // Get current campaign state and update with new values
       const currentCampaign = await campaign.getState();
       const updatedCampaign = {
         ...currentCampaign,
-        ...validation.data,
+        ...campaignData,
         // Ensure numeric fields are properly handled if provided
-        ...(validation.data.targetAmount !== undefined && { targetAmount: Number(validation.data.targetAmount) }),
-        ...(validation.data.daysRemaining !== undefined && { daysRemaining: Number(validation.data.daysRemaining) }),
+        ...(campaignData.targetAmount !== undefined && { targetAmount: Number(campaignData.targetAmount) }),
+        ...(campaignData.daysRemaining !== undefined && { daysRemaining: Number(campaignData.daysRemaining) }),
       };
 
       // Update the campaign in Durable Object
@@ -482,35 +542,99 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         return notFound(c, 'Event not found');
       }
 
-      const body = await c.req.json();
-      const validation = z.object({
-        title: z.string().min(1, 'Judul event wajib diisi').max(200, 'Judul event terlalu panjang').optional(),
-        description: z.string().min(1, 'Deskripsi event wajib diisi').max(1000, 'Deskripsi event terlalu panjang').optional(),
-        date: z.string().datetime('Tanggal harus dalam format ISO string').optional(),
-        time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Format waktu harus HH:MM').optional(),
-        location: z.string().optional(),
-        imageUrl: z.string().url('URL gambar tidak valid').optional().or(z.string().min(1, 'URL gambar wajib diisi')).optional(),
-        capacity: z.number().positive('Kapasitas harus lebih dari 0').nullable().optional(),
-        price: z.number().min(0, 'Harga tidak boleh negatif').optional(),
-        status: z.enum(['active', 'inactive', 'cancelled', 'completed']).optional(),
-        campaignId: z.string().optional(),
-      }).safeParse(body); // Allow partial updates
+      // Check if request is multipart (for file upload) or JSON
+      const contentType = c.req.header('content-type');
+      let eventData: any;
 
-      if (!validation.success) {
-        const errors = validation.error.issues.map(issue => issue.message).join(', ');
-        return bad(c, `Validation error: ${errors}`);
+      if (contentType?.includes('multipart/form-data')) {
+        // Handle multipart form data (file upload)
+        const formData = await c.req.parseBody();
+
+        // Validate required fields from form data (only if they exist in form data)
+        const title = formData.title as string;
+        const description = formData.description as string;
+        const date = formData.date as string;
+        const time = formData.time as string;
+        const location = formData.location as string || undefined;
+        const capacity = formData.capacity ? (formData.capacity === 'null' ? null : Number(formData.capacity)) : undefined;
+        const price = formData.price ? Number(formData.price) : undefined;
+        const status = formData.status as string;
+        const campaignId = formData.campaignId as string || undefined;
+
+        // Process image upload if provided
+        let imageUrl = undefined; // Don't change if not provided
+
+        if (formData.image && typeof formData.image !== 'string') {
+          const imageFile = formData.image as File;
+
+          // Validate image
+          const imageService = new ImageService(c.env, 'event');
+          const validation = imageService.validateImage(imageFile.type, imageFile.size);
+
+          if (!validation.isValid) {
+            return bad(c, `Validation error: ${validation.errors.join(', ')}`);
+          }
+
+          // Upload image to storage (R2 with Cloudinary fallback)
+          const uploadResult = await imageService.uploadImage(
+            await imageFile.arrayBuffer(),
+            imageFile.name,
+            imageFile.type,
+            'event'
+          );
+
+          imageUrl = uploadResult.url;
+        } else if (formData.imageUrl) {
+          // If no file but imageUrl is provided, use that
+          imageUrl = formData.imageUrl as string;
+        }
+
+        eventData = {
+          ...(title && { title }),
+          ...(description && { description }),
+          ...(date && { date }),
+          ...(time && { time }),
+          ...(location !== undefined && { location }),
+          ...(imageUrl && { imageUrl }),
+          ...(capacity !== undefined && { capacity }),
+          ...(price !== undefined && { price }),
+          ...(status && { status }),
+          ...(campaignId && { campaignId }),
+        };
+      } else {
+        // Handle JSON request
+        const body = await c.req.json();
+        const validation = z.object({
+          title: z.string().min(1, 'Judul event wajib diisi').max(200, 'Judul event terlalu panjang').optional(),
+          description: z.string().min(1, 'Deskripsi event wajib diisi').max(1000, 'Deskripsi event terlalu panjang').optional(),
+          date: z.string().datetime('Tanggal harus dalam format ISO string').optional(),
+          time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Format waktu harus HH:MM').optional(),
+          location: z.string().optional(),
+          imageUrl: z.string().url('URL gambar tidak valid').optional().or(z.string().min(1, 'URL gambar wajib diisi')).optional(),
+          capacity: z.number().positive('Kapasitas harus lebih dari 0').nullable().optional(),
+          price: z.number().min(0, 'Harga tidak boleh negatif').optional(),
+          status: z.enum(['active', 'inactive', 'cancelled', 'completed']).optional(),
+          campaignId: z.string().optional(),
+        }).safeParse(body); // Allow partial updates
+
+        if (!validation.success) {
+          const errors = validation.error.issues.map(issue => issue.message).join(', ');
+          return bad(c, `Validation error: ${errors}`);
+        }
+
+        eventData = validation.data;
       }
 
       // Get current event state and update with new values
       const currentEvent = await event.getState();
       const updatedEvent = {
         ...currentEvent,
-        ...validation.data,
+        ...eventData,
         // Ensure numeric fields are properly handled if provided
-        ...(validation.data.capacity !== undefined && {
-          capacity: validation.data.capacity === null ? null : Number(validation.data.capacity)
+        ...(eventData.capacity !== undefined && {
+          capacity: eventData.capacity === null ? null : Number(eventData.capacity)
         }),
-        ...(validation.data.price !== undefined && { price: Number(validation.data.price) }),
+        ...(eventData.price !== undefined && { price: Number(eventData.price) }),
       };
 
       // Update the event in Durable Object

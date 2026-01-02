@@ -4,8 +4,8 @@
 Create a comprehensive donation platform with Cloudflare Durable Objects database integration, admin dashboard for campaign management, and Odoo integration for invoice creation, while migrating from mock data to a real database system.
 
 ## Key Knowledge
-- **Technology Stack**: React/Vite (TypeScript), Cloudflare Workers (Hono framework), Durable Objects for database, R2 for image storage, Odoo XML-RPC API integration
-- **Architecture**: Frontend (React/Vite + TS), Backend (Cloudflare Workers), Storage (Durable Objects + R2 buckets)
+- **Technology Stack**: React/Vite (TypeScript), Cloudflare Workers (Hono framework), Durable Objects for database, R2 for image storage, Cloudinary as fallback for image storage, Odoo XML-RPC API integration
+- **Architecture**: Frontend (React/Vite + TS), Backend (Cloudflare Workers), Storage (Durable Objects + R2 buckets + Cloudinary fallback)
 - **Build Process**: Requires `bun run build` before `wrangler dev --port 8787` for code changes to take effect
 - **Environment**: Uses `.dev.vars` or `.env` files loaded via Vite's loadEnv mechanism
 - **API Protocol**: Odoo XML-RPC API with robust error handling and comprehensive XML response parsing
@@ -13,6 +13,7 @@ Create a comprehensive donation platform with Cloudflare Durable Objects databas
 - **File Structure**: Admin components in `src/pages/admin/`, services in `worker/services/`, and Cloudflare config in `wrangler.toml`
 - **Authentication**: Mock authentication system using localStorage for admin access
 - **Invoice System**: Invoices are created via Odoo integration when donations are made, with proper unique numbering
+- **Image Storage**: Primary storage in R2 with Cloudinary as fallback when R2 is unavailable
 
 ## Recent Actions
 - [DONE] Implemented comprehensive Odoo integration with proper XML-RPC parsing and error handling
@@ -95,11 +96,23 @@ Create a comprehensive donation platform with Cloudflare Durable Objects databas
 - [DONE] Added route and functionality to view participants list in admin dashboard
 - [DONE] Enhanced AdminDashboardPage with participant view button and proper tooltips for all action buttons
 - [DONE] Added export to CSV functionality for event participants data
+- [DONE] Created Cloudinary service for image uploads as fallback when R2 is unavailable
+- [DONE] Updated environment configuration to include Cloudinary credentials and upload preset
+- [DONE] Modified ImageService to use R2 as primary storage with Cloudinary as fallback
+- [DONE] Updated wrangler.toml to include Cloudinary configuration in both development and production environments
+- [DONE] Implemented proper authentication for Cloudinary uploads with signature generation
+- [DONE] Added comprehensive testing to verify Cloudinary integration works correctly
+- [DONE] Verified successful image uploads to Cloudinary with proper folder structure
+- [DONE] Fixed event update functionality to properly handle date formatting
+- [DONE] Enhanced event update endpoint to support multipart form data for image updates
+- [DONE] Enhanced campaign update endpoint to support multipart form data for image updates
+- [DONE] Updated frontend to handle multipart form data during event updates
+- [DONE] Ensured consistent handling of image uploads for both create and update operations
 
 ## Current Plan
 - [COMPLETED] All features implemented, tested, and successfully deployed
-
 ---
 
 ## Summary Metadata
-**Update time**: 2025-11-21T00:00:00.000Z
+**Update time**: 2026-01-01T00:00:00.000Z
+--- End of content ---

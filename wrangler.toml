@@ -17,6 +17,18 @@ binding = "EVENT_IMAGES"
 bucket_name = "event-images"
 preview_bucket_name = "event-images-preview"
 
+# Configuration for local development
+[dev]
+port = 8787
+
+# Configuration for local development with Miniflare
+[miniflare]
+# Enable R2 emulation for local development
+r2_buckets = [
+    { binding = "CAMPAIGN_IMAGES", bucket_name = "campaign-images" },
+    { binding = "EVENT_IMAGES", bucket_name = "event-images" }
+]
+
 # Durable Objects
 [[durable_objects.bindings]]
 name = "GlobalDurableObject"
@@ -30,16 +42,36 @@ new_classes = ["GlobalDurableObject"]
 [env.development]
 name = "amal-kita-dev"
 
-[env.production]
-name = "amal-kita"
-
-# Define variables for use in dev, preview, and production
-[vars]
+# Define variables for development environment
+[env.development.vars]
 # Odoo Configuration
 ODOO_BASE_URL = "http://localhost:8096"
 ODOO_USERNAME = "admin"
 ODOO_PASSWORD = "admin"
 ODOO_DATABASE = "odoo"
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME = "dogjcyuxn"
+CLOUDINARY_API_KEY = "678593415839236"
+CLOUDINARY_API_SECRET = "iBd8KocwZZEgSvPBdOa4iS7ivQg"
+CLOUDINARY_UPLOAD_PRESET = "amal_kita_upload"
+
+[env.production]
+name = "amal-kita"
+
+# Define variables for production environment
+[env.production.vars]
+# Odoo Configuration
+ODOO_BASE_URL = "http://localhost:8096"
+ODOO_USERNAME = "admin"
+ODOO_PASSWORD = "admin"
+ODOO_DATABASE = "odoo"
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME = "dogjcyuxn"
+CLOUDINARY_API_KEY = "678593415839236"
+CLOUDINARY_API_SECRET = "iBd8KocwZZEgSvPBdOa4iS7ivQg"
+CLOUDINARY_UPLOAD_PRESET = "amal_kita_upload"
 
 # Define bindings for use in dev, preview, and production
 [[env.development.r2_buckets]]

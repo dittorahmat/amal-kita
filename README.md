@@ -12,15 +12,21 @@ AmalKita adalah sebuah platform crowdfunding syariah modern yang dirancang untuk
 - **Terverifikasi & Terpercaya:** Menghubungkan donatur dengan kampanye-kampanye yang telah terverifikasi.
 - **Fokus Komunitas:** Dibuat khusus untuk komunitas Muslim di Indonesia dengan lokalisasi bahasa dan mata uang Rupiah.
 - **Desain Responsif:** Pengalaman pengguna yang mulus di semua perangkat, dari desktop hingga mobile.
+- **Manajemen Kampanye & Acara:** Pembuatan, pengeditan, dan pengelolaan kampanye donasi dan acara dengan dukungan upload gambar.
+- **Upload Gambar Cerdas:** Dukungan upload gambar dengan penyimpanan utama di R2 dan fallback ke Cloudinary.
+- **Integrasi ERP:** Integrasi otomatis dengan sistem Odoo untuk pembuatan invoice donasi.
+- **Manajemen Admin:** Dashboard admin komprehensif untuk pengelolaan kampanye dan acara.
 
 ## 🚀 Tumpukan Teknologi
 
 - **Frontend:** React, Vite, React Router, TypeScript
 - **Backend:** Cloudflare Workers, Hono
-- **Penyimpanan:** Cloudflare Durable Objects
+- **Penyimpanan:** Cloudflare Durable Objects, R2 untuk penyimpanan gambar (utama), Cloudinary sebagai fallback
 - **UI & Styling:** Tailwind CSS, Shadcn/UI, Framer Motion
 - **Ikon:** Lucide React
 - **Manajemen State:** Zustand
+- **Validasi:** Zod
+- **Integrasi ERP:** Odoo XML-RPC API
 
 ## 🛠️ Memulai
 

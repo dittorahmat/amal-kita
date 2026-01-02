@@ -9,6 +9,10 @@ export interface Env {
   GlobalDurableObject: DurableObjectNamespace<GlobalDurableObject>;
   CAMPAIGN_IMAGES: R2Bucket;
   EVENT_IMAGES: R2Bucket;
+  CLOUDINARY_CLOUD_NAME?: string;
+  CLOUDINARY_API_KEY?: string;
+  CLOUDINARY_API_SECRET?: string;
+  CLOUDINARY_UPLOAD_PRESET?: string;
   ODOO_BASE_URL?: string;
   ODOO_USERNAME?: string;
   ODOO_PASSWORD?: string;
